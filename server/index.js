@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -11,7 +12,7 @@ app.use(express.json());
 
 // --- DATABASE CONNECTION ---
 // IMPORTANT: Paste YOUR actual MongoDB link here
-const MONGO_URI = "mongodb://chatadmin:Sample123@ac-qsmpx7j-shard-00-00.jetqec4.mongodb.net:27017,ac-qsmpx7j-shard-00-01.jetqec4.mongodb.net:27017,ac-qsmpx7j-shard-00-02.jetqec4.mongodb.net:27017/?ssl=true&replicaSet=atlas-sjx6ya-shard-0&authSource=admin&appName=Cluster0";
+const MONGO_URI = process.env.MONGO_URI;
 
 mongoose.connect(MONGO_URI, { family: 4 })
   .then(() => {
