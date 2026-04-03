@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 
-const socket = io.connect('http://localhost:3001');
+const socket = io.connect('https://chat-app-lz3l.onrender.com');
 
 function App() {
   const [username, setUsername] = useState("");
@@ -25,7 +25,7 @@ function App() {
 
   // Core Data Fetcher
   const fetchMyData = async (user) => {
-    const response = await fetch(`http://localhost:3001/my-data`, {
+    const response = await fetch(`https://chat-app-lz3l.onrender.com/my-data`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: user }),
     });
@@ -41,7 +41,7 @@ function App() {
     if (!username || !password) return alert("Please enter both username and password!");
     const endpoint = isLoginMode ? "login" : "register";
     try {
-      const response = await fetch(`http://localhost:3001/${endpoint}`, {
+      const response = await fetch(`https://chat-app-lz3l.onrender.com/${endpoint}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
@@ -68,7 +68,7 @@ function App() {
   const addNewGroup = async () => {
     const newGroup = prompt("Enter new group name:");
     if (newGroup && newGroup.trim() !== "") {
-      const res = await fetch("http://localhost:3001/create-group", {
+      const res = await fetch("https://chat-app-lz3l.onrender.com/create-group", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, groupName: newGroup }),
       });
@@ -85,7 +85,7 @@ function App() {
     if (activeRoom === "General") return alert("You cannot leave the General group!");
     if (!window.confirm(`Leave ${activeRoom}?`)) return;
 
-    await fetch("http://localhost:3001/leave-group", {
+    await fetch("https://chat-app-lz3l.onrender.com/leave-group", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, groupName: activeRoom }),
     });
@@ -98,7 +98,7 @@ function App() {
   useEffect(() => {
     const searchDB = async () => {
       if (searchTerm.trim() === "") { setSearchResults([]); return; }
-      const res = await fetch("http://localhost:3001/search-groups", {
+      const res = await fetch("https://chat-app-lz3l.onrender.com/search-groups", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ searchTerm }),
       });
@@ -111,7 +111,7 @@ function App() {
 
   // Request Join
   const requestJoin = async (groupName) => {
-    await fetch("http://localhost:3001/request-join", {
+    await fetch("https://chat-app-lz3l.onrender.com/request-join", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, groupName }),
     });
@@ -121,7 +121,7 @@ function App() {
 
   // Approve Join
   const approveUser = async (targetUser) => {
-    await fetch("http://localhost:3001/approve-join", {
+    await fetch("https://chat-app-lz3l.onrender.com/approve-join", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ groupName: activeRoom, targetUser }),
     });
