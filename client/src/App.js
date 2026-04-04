@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 
-// 🛑 1. PASTE YOUR RENDER URL HERE:
+// 🛑 1. PASTE YOUR RENDER URL:
 const socket = io.connect('https://chat-app-lz3l.onrender.com');
 
 function App() {
@@ -13,8 +13,6 @@ function App() {
   const [currentMessage, setCurrentMessage] = useState("");
   const [messageList, setMessageList] = useState({});
   const [activeRoom, setActiveRoom] = useState("General");
-  
-  // --- NEW: Mobile View Toggle State ---
   const [isMobileChatView, setIsMobileChatView] = useState(false);
   
   const [rooms, setRooms] = useState([]); 
@@ -22,12 +20,18 @@ function App() {
   const [searchResults, setSearchResults] = useState([]); 
   const [searchTerm, setSearchTerm] = useState("");
 
+  // --- NEW: AI State Variables ---
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiAnswer, setAiAnswer] = useState("");
+  const [isAIThinking, setIsAIThinking] = useState(false);
+
   const scrollRef = useRef();
 
   useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messageList, activeRoom, isMobileChatView]);
 
   const fetchMyData = async (user) => {
-    // 🛑 2. PASTE YOUR RENDER URL HERE:
+    // 🛑 2. PASTE YOUR RENDER URL:
     const response = await fetch(`https://chat-app-lz3l.onrender.com/my-data`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: user }),
@@ -44,7 +48,7 @@ function App() {
     if (!username || !password) return alert("Please enter both username and password!");
     const endpoint = isLoginMode ? "login" : "register";
     try {
-      // 🛑 3. PASTE YOUR RENDER URL HERE:
+      // 🛑 3. PASTE YOUR RENDER URL:
       const response = await fetch(`https://chat-app-lz3l.onrender.com/${endpoint}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -71,7 +75,7 @@ function App() {
   const addNewGroup = async () => {
     const newGroup = prompt("Enter new group name:");
     if (newGroup && newGroup.trim() !== "") {
-      // 🛑 4. PASTE YOUR RENDER URL HERE:
+      // 🛑 4. PASTE YOUR RENDER URL:
       const res = await fetch("https://chat-app-lz3l.onrender.com/create-group", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, groupName: newGroup }),
@@ -80,7 +84,7 @@ function App() {
       if (data.status === "ok") {
         fetchMyData(username);
         setActiveRoom(newGroup);
-        setIsMobileChatView(true); // Open chat on mobile
+        setIsMobileChatView(true);
       } else { alert(data.error); }
     }
   };
@@ -88,22 +92,20 @@ function App() {
   const leaveGroup = async () => {
     if (activeRoom === "General") return alert("You cannot leave the General group!");
     if (!window.confirm(`Leave ${activeRoom}?`)) return;
-
-    // 🛑 5. PASTE YOUR RENDER URL HERE:
+    // 🛑 5. PASTE YOUR RENDER URL:
     await fetch("https://chat-app-lz3l.onrender.com/leave-group", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, groupName: activeRoom }),
     });
-    
     fetchMyData(username);
     setActiveRoom("General");
-    setIsMobileChatView(false); // Go back to list on mobile
+    setIsMobileChatView(false);
   };
 
   useEffect(() => {
     const searchDB = async () => {
       if (searchTerm.trim() === "") { setSearchResults([]); return; }
-      // 🛑 6. PASTE YOUR RENDER URL HERE:
+      // 🛑 6. PASTE YOUR RENDER URL:
       const res = await fetch("https://chat-app-lz3l.onrender.com/search-groups", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ searchTerm }),
@@ -116,7 +118,7 @@ function App() {
   }, [searchTerm]);
 
   const requestJoin = async (groupName) => {
-    // 🛑 7. PASTE YOUR RENDER URL HERE:
+    // 🛑 7. PASTE YOUR RENDER URL:
     await fetch("https://chat-app-lz3l.onrender.com/request-join", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, groupName }),
@@ -126,13 +128,39 @@ function App() {
   };
 
   const approveUser = async (targetUser) => {
-    // 🛑 8. PASTE YOUR RENDER URL HERE:
+    // 🛑 8. PASTE YOUR RENDER URL:
     await fetch("https://chat-app-lz3l.onrender.com/approve-join", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ groupName: activeRoom, targetUser }),
     });
     alert(`${targetUser} approved!`);
     fetchMyData(username); 
+  };
+
+  // --- NEW: Ask AI Function ---
+  const askAI = async () => {
+    if (!aiQuestion.trim()) return;
+    setIsAIThinking(true);
+    setAiAnswer("");
+    
+    try {
+      // 🛑 9. PASTE YOUR RENDER URL:
+      const response = await fetch("https://chat-app-lz3l.onrender.com/ai-analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ room: activeRoom, question: aiQuestion }),
+      });
+      
+      const data = await response.json();
+      if (data.status === "ok") {
+        setAiAnswer(data.answer);
+      } else {
+        setAiAnswer("Sorry, I encountered an error analyzing the chat.");
+      }
+    } catch (error) {
+      setAiAnswer("Server error. Could not reach the AI.");
+    }
+    setIsAIThinking(false);
   };
 
   useEffect(() => {
@@ -143,11 +171,9 @@ function App() {
     return () => { socket.off("receive_message", handleReceive); socket.off("load_messages", handleLoadHistory); };
   }, []);
 
-  // --- UI SCREENS ---
   if (!isLoggedIn) {
     return (
       <div className="h-screen bg-[#00a884] flex flex-col items-center justify-center p-4">
-        {/* Responsive Login Container */}
         <div className="bg-white p-6 sm:p-10 rounded-lg shadow-2xl w-full max-w-[450px] text-center">
           <div className="text-5xl sm:text-6xl mb-4">💬</div>
           <h1 className="text-xl sm:text-2xl font-light text-gray-600 mb-6">WhatsApp Clone</h1>
@@ -167,10 +193,42 @@ function App() {
     <div className="h-screen w-screen bg-[#dadbd3] flex items-center justify-center overflow-hidden relative">
       <div className="absolute top-0 w-full h-32 bg-[#00a884] z-0 hidden md:block"></div>
       
-      {/* Responsive Main Container: Full screen on mobile, 95vh on desktop */}
-      <div className="flex w-full max-w-[1400px] h-screen md:h-[95vh] bg-[#f0f2f5] shadow-2xl z-10 rounded-none md:rounded-lg overflow-hidden">
+      <div className="flex w-full max-w-[1400px] h-screen md:h-[95vh] bg-[#f0f2f5] shadow-2xl z-10 rounded-none md:rounded-lg overflow-hidden relative">
         
-        {/* SIDEBAR - Hides on mobile if a chat is active */}
+        {/* --- AI MODAL OVERLAY --- */}
+        {showAIModal && (
+          <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
+              <div className="bg-indigo-600 p-4 text-white flex justify-between items-center">
+                <h3 className="font-bold">🤖 Analyze '{activeRoom}'</h3>
+                <button onClick={() => { setShowAIModal(false); setAiAnswer(""); setAiQuestion(""); }} className="text-white hover:text-gray-200 text-xl font-bold">✕</button>
+              </div>
+              <div className="p-6 flex flex-col gap-4">
+                <p className="text-sm text-gray-600">Ask Gemini anything about the history of this specific chat group.</p>
+                <div className="flex gap-2">
+                  <input 
+                    className="flex-1 border border-gray-300 p-3 rounded-lg outline-none focus:border-indigo-500" 
+                    placeholder="e.g., What was the WiFi password?" 
+                    value={aiQuestion} 
+                    onChange={(e) => setAiQuestion(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && askAI()}
+                  />
+                  <button onClick={askAI} disabled={isAIThinking} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 rounded-lg font-bold disabled:opacity-50 transition-colors">
+                    {isAIThinking ? "..." : "Ask"}
+                  </button>
+                </div>
+                
+                {aiAnswer && (
+                  <div className="mt-4 p-4 bg-indigo-50 border border-indigo-100 rounded-lg max-h-60 overflow-y-auto whitespace-pre-wrap text-sm text-gray-800 shadow-inner">
+                    {aiAnswer}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SIDEBAR */}
         <div className={`w-full md:w-[400px] bg-white border-r flex-col ${isMobileChatView ? 'hidden md:flex' : 'flex'}`}>
           <div className="h-16 bg-[#f0f2f5] flex items-center justify-between px-4 border-b">
             <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center text-white font-bold uppercase shrink-0">{username[0]}</div>
@@ -219,37 +277,27 @@ function App() {
           </div>
         </div>
 
-        {/* MAIN CHAT - Hides on mobile if list view is active */}
+        {/* MAIN CHAT */}
         <div className={`flex-1 flex-col bg-[#efeae2] relative ${!isMobileChatView ? 'hidden md:flex' : 'flex'}`} style={{backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')"}}>
           
-          {/* Chat Header */}
           <div className="h-16 bg-[#f0f2f5] flex items-center px-2 sm:px-4 border-b shadow-sm relative">
-            
-            {/* NEW: Mobile Back Button */}
             <button onClick={() => setIsMobileChatView(false)} className="md:hidden mr-2 text-xl hover:opacity-70 p-2">⬅️</button>
-            
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-200 rounded-full flex items-center justify-center text-blue-600 mr-3 sm:mr-4 font-bold uppercase shrink-0">{activeRoom[0]}</div>
             <div className="flex-1 font-medium truncate">{activeRoom}</div>
             
-            {/* Admin Management Dropdown */}
-            {currentGroupManaged && currentGroupManaged.pendingRequests.length > 0 && (
-              <div className="bg-orange-100 text-orange-800 border border-orange-300 p-1 sm:px-3 sm:py-1 rounded text-xs sm:text-sm font-bold flex flex-col sm:flex-row items-center gap-1 sm:gap-4 shadow-sm absolute right-16 sm:right-32 z-20">
-                <span>🔔 {currentGroupManaged.pendingRequests.length} Pending</span>
-                <div className="flex gap-1 sm:gap-2">
-                  {currentGroupManaged.pendingRequests.map(user => (
-                    <button key={user} onClick={() => approveUser(user)} className="bg-orange-500 hover:bg-orange-600 text-white px-2 py-1 rounded text-[10px] sm:text-xs">Approve {user}</button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* --- NEW: AI Modal Trigger Button --- */}
+            <button 
+              onClick={() => setShowAIModal(true)} 
+              className="mr-2 text-[10px] sm:text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 border border-indigo-200 px-2 py-1 sm:px-3 sm:py-2 rounded font-bold shadow-sm transition-colors flex items-center gap-1"
+            >
+              🤖 <span className="hidden sm:inline">Analyze</span>
+            </button>
 
-            {/* Leave Group Button */}
             {activeRoom !== "General" && (
-              <button onClick={leaveGroup} className="text-[10px] sm:text-xs bg-red-100 text-red-700 px-2 py-1 sm:px-3 sm:py-2 rounded font-bold ml-2">🚪 Leave</button>
+              <button onClick={leaveGroup} className="text-[10px] sm:text-xs bg-red-100 text-red-700 px-2 py-1 sm:px-3 sm:py-2 rounded font-bold">🚪 Leave</button>
             )}
           </div>
 
-          {/* Chat Messages */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-2">
             {(messageList[activeRoom] || []).map((msg, i) => (
               <div key={i} className={`flex ${msg.author === username ? 'justify-end' : 'justify-start'}`}>
@@ -263,7 +311,6 @@ function App() {
             <div ref={scrollRef} />
           </div>
 
-          {/* Chat Input */}
           <div className="min-h-[64px] bg-[#f0f2f5] flex items-center px-2 sm:px-4 gap-2 sm:gap-4 pb-safe">
             <input className="flex-1 bg-white p-2 sm:p-3 rounded-lg outline-none text-sm" placeholder={`Message ${activeRoom}...`} value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} onKeyPress={(e) => e.key === "Enter" && sendMessage()} />
             <button className="text-xl sm:text-2xl text-gray-500 hover:text-[#00a884] p-2" onClick={sendMessage}>➤</button>

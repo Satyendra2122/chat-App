@@ -141,6 +141,45 @@ app.post("/leave-group", async (req, res) => {
   res.json({ status: "ok" });
 });
 
+// --- NEW: AI CHAT ANALYSIS ROUTE ---
+app.post("/ai-analyze", async (req, res) => {
+  const { room, question } = req.body;
+  
+  try {
+    // 1. Fetch all messages for this specific room from the database
+    const messages = await Message.find({ room }).sort({ timestamp: 1 });
+    
+    // 2. Format the messages into a readable script
+    const chatHistory = messages.map(m => `[${m.time}] ${m.author}: ${m.message}`).join("\n");
+    
+    // 3. Build a strict prompt for Gemini
+    const prompt = `
+      You are an AI assistant built into a chat app. You are currently analyzing the group chat named "${room}".
+      
+      Here is the entire chat history for this group:
+      ---
+      ${chatHistory}
+      ---
+      
+      Based ONLY on the chat history provided above, please answer this user's question: "${question}"
+      
+      Rules:
+      - Keep your answer concise and helpful.
+      - If the answer is not mentioned anywhere in the chat history, politely say "I couldn't find any information about that in this group's chat history."
+      - Do not make up outside information.
+    `;
+
+    // 4. Send to Gemini and wait for the answer
+    const result = await aiModel.generateContent(prompt);
+    const answer = result.response.text();
+
+    res.json({ status: "ok", answer });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to analyze chat." });
+  }
+});
+
 // --- SOCKET.IO ---
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
