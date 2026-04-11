@@ -24,10 +24,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const aiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 // --- 2. MONGODB CONNECTION ---
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => console.log("✅ DATABASE CONNECTED"))
+mongoose.connect(process.env.MONGO_URI).then(() => console.log("✅ DATABASE CONNECTED"))
   .catch((err) => console.log("❌ DATABASE ERROR: ", err));
 
 // --- 3. DATABASE SCHEMAS ---
