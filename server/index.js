@@ -21,7 +21,8 @@ const io = new Server(server, {
 
 // --- 1. INITIALIZE GEMINI AI ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const aiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// const aiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const aiModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 // --- 2. MONGODB CONNECTION ---
 mongoose.connect(process.env.MONGO_URI).then(() => console.log("✅ DATABASE CONNECTED"))
